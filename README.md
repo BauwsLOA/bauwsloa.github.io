@@ -1,6 +1,7 @@
 <div align="center">
 
-<a href="https://oldschool.runescape.wiki/index.php?curid=641554">Link</a>
+<div align="center">
+<img src="https://oldschool.runescape.wiki/images/Leagues_VI_-_Demonic_Pacts_League_logo.png" alt="Demonic Pacts Logo" width="140"/>
 
 # OSRS Demonic Pacts League Leaderboard
 
