@@ -21,7 +21,7 @@
 
 A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and unlocked region data for players and presents it in a filterable interface.
 
-- **⚔ Fetch Leaderboard** — loads up to 500+ players from Jagex's seasonal hiscores
+- **⚔ Fetch Leaderboard** — loads up to 500 players from Jagex's seasonal hiscores
 - **🗺 Fetch Regions** — pulls each player's unlocked regions from TempleOSRS
 - **🔎 Player Lookup** — search any player by name; fetches rank, points, and regions live even if they aren't in the loaded pages
 - **Filter by region** — Match ANY or ALL with multi-region checkbox filtering
@@ -35,7 +35,7 @@ A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and u
 Auto updates the ranking every hour or on demand with manual 'Fetch' buttons
 1. Press 'Fetch Leaderboards'
 2. Press 'Fetch Regions'
-3. Maximum fetchable pages set to 25, if the character you want to lookup is not showing up then type the RSN in the search bar and hit 'Lookup', it will then specifically fetch that player's data
+3. Maximum fetchable players is 500, if the character you want to lookup is not showing up then type the RSN in the search bar and hit 'Lookup', it will then specifically fetch that player's data
 
 
    ~ Auto updater is set to run hourly via GitHub ~
