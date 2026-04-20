@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demonic Pacts League — Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark:    #0d0d0d;
+    --bg-panel:   #161616;
+    --bg-card:    #1e1e1e;
+    --bg-row-a:   #1a1a1a;
+    --bg-row-b:   #212121;
+    --bg-hover:   #2d2d2d;
+    --gold:       #c8a84b;
+    --gold-light: #e8c96a;
+    --gold-dim:   #7a6530;
+    --gold-faint: #3a2e18;
+    --red:        #8b1a1a;
+    --red-light:  #c0392b;
+    --green:      #2d6a2d;
+    --green-light:#3a8a3a;
+    --text-white: #f0ead6;
+    --text-dim:   #888070;
+    --text-muted: #555045;
+    --border:     #333025;
+
+    --region-varlamore:  #7b3f9e;
+    --region-karamja:    #2d7a3a;
+    --region-asgarnia:   #1a5fa8;
+    --region-desert:     #a86e1a;
+    --region-fremennik:  #2a6b7c;
+    --region-kandarin:   #4a7a2a;
+    --region-kourend:    #6b2a6b;
+    --region-morytania:  #5a2020;
+    --region-tirannwn:   #1e6b4a;
+    --region-wilderness: #6b3a1a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-dark);
+    color: var(--text-white);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* ── Layout ── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── Header ── */
+  #header {
+    background: var(--bg-panel);
+    border-bottom: 2px solid var(--gold-dim);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .skull { font-size: 26px; color: var(--gold); line-height: 1; }
+  #header-text h1 {
+    font-family: 'IM Fell English', serif;
+    font-size: 19px;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+  #header-text p {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  #header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #generated-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* ── Body ── */
+  #body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 220px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding-bottom: 16px;
+  }
+  #sidebar::-webkit-scrollbar { width: 6px; }
+  #sidebar::-webkit-scrollbar-track { background: var(--bg-panel); }
+  #sidebar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+  .sb-section {
+    font-size: 9px;
+    font-weight: bold;
+    color: var(--gold-dim);
+    letter-spacing: 0.08em;
+    padding: 14px 14px 4px;
+  }
+  .sb-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 10px;
+  }
+
+  /* Match mode radios */
+  .match-mode {
+    display: flex;
+    gap: 10px;
+    padding: 0 14px 8px;
+  }
+  .match-mode label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+  .match-mode input[type=radio] { accent-color: var(--gold); }
+
+  /* Region checkboxes */
+  #region-list {
+    padding: 4px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    margin: 0 12px 6px;
+    border-radius: 4px;
+  }
+  #region-list::-webkit-scrollbar { width: 5px; }
+  #region-list::-webkit-scrollbar-track { background: var(--bg-card); }
+  #region-list::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+
+  .region-cb {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    padding: 2px 0;
+    color: var(--text-white);
+    font-size: 10px;
+  }
+  .region-cb input[type=checkbox] { accent-color: var(--gold); width: 13px; height: 13px; }
+  .region-cb .star { color: var(--gold); }
+
+  /* Sidebar buttons */
+  .sb-btn {
+    display: block;
+    width: calc(100% - 24px);
+    margin: 0 12px 4px;
+    padding: 7px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sb-btn:hover { background: var(--bg-hover); color: var(--text-white); }
+
+  /* ── Main content ── */
+  #content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-dark);
+  }
+  .gold-bar { height: 2px; background: var(--gold-dim); flex-shrink: 0; }
+
+  /* Search + stats bar */
+  #top-bar {
+    background: var(--bg-panel);
+    padding: 0 14px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #top-bar .icon { color: var(--text-dim); font-size: 13px; }
+  #search-input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 5px 10px;
+    color: var(--text-white);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    width: 210px;
+    outline: none;
+  }
+  #search-input::placeholder { color: var(--text-muted); }
+  #search-input:focus { border-color: var(--gold-dim); }
+  #count-label { color: var(--text-dim); font-size: 10px; }
+  #region-label { color: var(--text-dim); font-size: 10px; }
+
+  /* ── Table ── */
+  #table-wrap {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header row */
+  #thead {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--gold-dim);
+    display: grid;
+    grid-template-columns: 70px 220px 110px 1fr;
+    flex-shrink: 0;
+  }
+  .th {
+    padding: 6px 8px;
+    font-size: 9px;
+    font-weight: bold;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .th:hover { color: var(--gold-light); }
+  .th.sort-active { color: var(--gold-light); }
+  .th-rank  { justify-content: flex-end; padding-right: 12px; }
+  .th-pts   { justify-content: flex-end; padding-right: 12px; }
+  .sort-arrow { font-size: 8px; }
+
+  /* Scrollable body */
+  #tbody-scroll {
+    overflow-y: auto;
+    flex: 1;
+  }
+  #tbody-scroll::-webkit-scrollbar { width: 10px; }
+  #tbody-scroll::-webkit-scrollbar-track { background: var(--bg-panel); }
+  #tbody-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+  #tbody-scroll::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  #tbody {
+    width: 100%;
+  }
+
+  /* Data row */
+  .row {
+    display: grid;
+    grid-template-columns: 70px 220px 110px 1fr;
+    height: 32px;
+    align-items: center;
+    border-bottom: 1px solid rgba(51,48,37,0.4);
+    transition: background 0.08s;
+  }
+  .row:nth-child(even) { background: var(--bg-row-b); }
+  .row:nth-child(odd)  { background: var(--bg-row-a); }
+  .row:hover           { background: var(--bg-hover); }
+
+  .td { padding: 0 8px; overflow: hidden; white-space: nowrap; }
+  .td-rank {
+    text-align: right;
+    padding-right: 12px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .td-rank.r1 { color: #c8a84b; }
+  .td-rank.r2 { color: #c0c0c0; }
+  .td-rank.r3 { color: #cd7f32; }
+  .td-rank.rn { color: var(--text-dim); }
+
+  .td-name { font-size: 11px; color: var(--text-white); }
+  .td-name a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .td-name a:hover { color: var(--gold-light); text-decoration: underline; }
+
+  .td-pts  { text-align: right; padding-right: 12px; color: var(--gold-light); font-size: 11px; }
+
+  .td-regions { display: flex; flex-wrap: nowrap; gap: 4px; align-items: center; overflow: hidden; padding: 0 6px; }
+
+  /* Region chips */
+  .chip {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+    color: #0d0d0d;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chip-Varlamore          { background: var(--region-varlamore); color: #e8d0ff; }
+  .chip-Karamja            { background: var(--region-karamja); }
+  .chip-Asgarnia           { background: var(--region-asgarnia); color: #c8ddff; }
+  .chip-Desert             { background: var(--region-desert); }
+  .chip-Fremennik\.Province{ background: var(--region-fremennik); color: #c8eeff; }
+  .chip-Kandarin           { background: var(--region-kandarin); }
+  .chip-Kebos\.and\.Kourend{ background: var(--region-kourend); color: #e8c8e8; }
+  .chip-Morytania          { background: var(--region-morytania); color: #ffbbbb; }
+  .chip-Tirannwn           { background: var(--region-tirannwn); color: #b8ffe0; }
+  .chip-Wilderness         { background: var(--region-wilderness); color: #ffd8b8; }
+
+  .unknown-txt { color: var(--text-muted); font-size: 10px; }
+
+  /* Empty state */
+  #empty-state {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* Loading overlay */
+  #loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 100;
+  }
+  #loading h2 {
+    font-family: 'IM Fell English', serif;
+    font-size: 22px;
+    color: var(--gold);
+  }
+  #loading p { color: var(--text-dim); font-size: 11px; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--gold-faint);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  #error-msg {
+    display: none;
+    background: #2a0808;
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 20px;
+    color: #ffaaaa;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  /* Status bar */
+  #status-bar {
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    padding: 5px 14px;
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  /* Export button in status bar */
+  #export-btn {
+    float: right;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  #export-btn:hover { color: var(--text-white); border-color: var(--gold-dim); }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>☠ Demonic Pacts League</h2>
+  <p>Loading leaderboard data…</p>
+</div>
+
+<div id="app" style="display:none;">
+
+  <!-- Header -->
+  <div id="header">
+    <span class="skull">☠</span>
+    <div id="header-text">
+      <h1>DEMONIC PACTS LEAGUE</h1>
+      <p>Leagues VI &nbsp;•&nbsp; April 15 – June 10, 2026</p>
+    </div>
+    <div id="header-right">
+      <div id="generated-time"></div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div id="body">
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div class="sb-section">FILTER BY REGION</div>
+
+      <div class="match-mode">
+        <label><input type="radio" name="matchmode" value="any" checked> Match ANY</label>
+        <label><input type="radio" name="matchmode" value="all"> Match ALL</label>
+      </div>
+
+      <div id="region-list"></div>
+
+      <button class="sb-btn" id="clear-btn">✕&nbsp; Clear Filters</button>
+      <div class="sb-divider"></div>
+      <button class="sb-btn" id="sidebar-export-btn">↓&nbsp; Export CSV</button>
+    </div>
+
+    <!-- Content -->
+    <div id="content">
+      <div class="gold-bar"></div>
+
+      <!-- Search + stats bar -->
+      <div id="top-bar">
+        <span class="icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search player name…" autocomplete="off">
+        <span id="count-label"></span>
+        <span id="region-label"></span>
+      </div>
+
+      <!-- Table -->
+      <div id="table-wrap">
+        <div id="thead">
+          <div class="th th-rank"  data-col="rank">RANK <span class="sort-arrow">▼</span></div>
+          <div class="th"          data-col="name">PLAYER NAME <span class="sort-arrow"></span></div>
+          <div class="th th-pts"   data-col="points">LEAGUE PTS <span class="sort-arrow"></span></div>
+          <div class="th"          data-col="regions">REGIONS <span class="sort-arrow"></span></div>
+        </div>
+
+        <div id="error-msg"></div>
+
+        <div id="tbody-scroll">
+          <div id="tbody"></div>
+          <div id="empty-state">No players match the current filter.</div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div id="status-bar">
+        <button id="export-btn">↓ Export CSV</button>
+        <span id="status-text">Loading…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────────────────────────────────────
+
+let allPlayers  = [];
+let filtered    = [];
+let sortCol     = 'rank';
+let sortRev     = false;
+let debounceT   = null;
+let generatedAt = '';
+
+const REGION_COLORS = {
+  'Varlamore':           '#7b3f9e',
+  'Karamja':             '#2d7a3a',
+  'Asgarnia':            '#1a5fa8',
+  'Desert':              '#a86e1a',
+  'Fremennik Province':  '#2a6b7c',
+  'Kandarin':            '#4a7a2a',
+  'Kebos and Kourend':   '#6b2a6b',
+  'Morytania':           '#5a2020',
+  'Tirannwn':            '#1e6b4a',
+  'Wilderness':          '#6b3a1a',
+};
+
+const ALWAYS_UNLOCKED = ['Varlamore', 'Karamja'];
+const ALL_REGIONS = [
+  'Varlamore','Karamja','Asgarnia','Desert',
+  'Fremennik Province','Kandarin','Kebos and Kourend',
+  'Morytania','Tirannwn','Wilderness'
+];
+
+// Text colour for chips (light on dark bg, dark on light bg)
+const CHIP_TEXT = {
+  'Varlamore':          '#e8d0ff',
+  'Karamja':            '#0d0d0d',
+  'Asgarnia':           '#c8ddff',
+  'Desert':             '#0d0d0d',
+  'Fremennik Province': '#c8eeff',
+  'Kandarin':           '#0d0d0d',
+  'Kebos and Kourend':  '#e8c8e8',
+  'Morytania':          '#ffbbbb',
+  'Tirannwn':           '#b8ffe0',
+  'Wilderness':         '#ffd8b8',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Build sidebar region checkboxes
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildRegionList() {
+  const list = document.getElementById('region-list');
+  ALL_REGIONS.forEach(region => {
+    const label = document.createElement('label');
+    label.className = 'region-cb';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = region;
+    cb.addEventListener('change', applyFilter);
+    const star = ALWAYS_UNLOCKED.includes(region) ? ' <span class="star">★</span>' : '';
+    label.appendChild(cb);
+    label.innerHTML += region + star;
+    list.appendChild(label);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Render table
+// ─────────────────────────────────────────────────────────────────────────────
+
+function rankClass(rank) {
+  if (rank === 1) return 'r1';
+  if (rank === 2) return 'r2';
+  if (rank === 3) return 'r3';
+  return 'rn';
+}
+
+function chipHTML(region) {
+  const bg  = REGION_COLORS[region] || '#555';
+  const col = CHIP_TEXT[region]     || '#0d0d0d';
+  return `<span class="chip" style="background:${bg};color:${col}">${escH(region)}</span>`;
+}
+
+function escH(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty-state');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const frag = document.createDocumentFragment();
+  for (const p of filtered) {
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const regions = p.regions || [];
+    const regionsHTML = regions.length
+      ? regions.map(chipHTML).join('')
+      : '<span class="unknown-txt">Unknown</span>';
+
+    const osrsUrl = `https://secure.runescape.com/m=hiscore_oldschool_seasonal/hiscorepersonal.ws?user1=${encodeURIComponent(p.name)}`;
+
+    row.innerHTML =
+      `<div class="td td-rank ${rankClass(p.rank)}">${p.rank.toLocaleString()}</div>` +
+      `<div class="td td-name"><a href="${osrsUrl}" target="_blank" rel="noopener">${escH(p.name)}</a></div>` +
+      `<div class="td td-pts">${p.points.toLocaleString()}</div>` +
+      `<div class="td td-regions">${regionsHTML}</div>`;
+
+    frag.appendChild(row);
+  }
+
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Filter + sort
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getCheckedRegions() {
+  return Array.from(document.querySelectorAll('#region-list input:checked')).map(cb => cb.value);
+}
+
+function getMatchMode() {
+  return document.querySelector('input[name="matchmode"]:checked').value;
+}
+
+function applyFilter() {
+  const query    = document.getElementById('search-input').value.toLowerCase().trim();
+  const selected = getCheckedRegions();
+  const mode     = getMatchMode();
+  const selSet   = new Set(selected.map(r => r.toLowerCase()));
+
+  let result = allPlayers;
+
+  if (query) {
+    result = result.filter(p => p.name.toLowerCase().includes(query));
+  }
+
+  if (selSet.size > 0) {
+    result = result.filter(p => {
+      const pr = new Set((p.regions || []).map(r => r.toLowerCase()));
+      if (mode === 'all') {
+        for (const r of selSet) if (!pr.has(r)) return false;
+        return true;
+      } else {
+        for (const r of selSet) if (pr.has(r)) return true;
+        return false;
+      }
+    });
+  }
+
+  filtered = result;
+  renderTable();
+  updateStats();
+}
+
+function onSearchChange() {
+  clearTimeout(debounceT);
+  debounceT = setTimeout(applyFilter, 180);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sort
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sortPlayers(col) {
+  if (sortCol === col) {
+    sortRev = !sortRev;
+  } else {
+    sortCol = col;
+    sortRev = col === 'points'; // default desc for points
+  }
+
+  allPlayers.sort((a, b) => {
+    let va, vb;
+    if (col === 'regions') {
+      va = (a.regions || []).length;
+      vb = (b.regions || []).length;
+    } else if (col === 'name') {
+      va = a.name.toLowerCase();
+      vb = b.name.toLowerCase();
+    } else {
+      va = a[col] || 0;
+      vb = b[col] || 0;
+    }
+    if (va < vb) return sortRev ? 1 : -1;
+    if (va > vb) return sortRev ? -1 : 1;
+    return 0;
+  });
+
+  // Update header arrows
+  document.querySelectorAll('.th').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    if (th.dataset.col === col) {
+      th.classList.add('sort-active');
+      arrow.textContent = sortRev ? '▲' : '▼';
+    } else {
+      th.classList.remove('sort-active');
+      arrow.textContent = '';
+    }
+  });
+
+  applyFilter();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Stats
+// ─────────────────────────────────────────────────────────────────────────────
+
+function updateStats() {
+  const total = allPlayers.length;
+  const known = allPlayers.filter(p => p.regions && p.regions.length > 0).length;
+  const shown = filtered.length;
+  document.getElementById('count-label').textContent = `Showing ${shown.toLocaleString()} / ${total.toLocaleString()}`;
+  document.getElementById('region-label').textContent = `│  Regions: ${known.toLocaleString()}/${total.toLocaleString()}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Export CSV
+// ─────────────────────────────────────────────────────────────────────────────
+
+function exportCSV() {
+  const rows = ['Rank,Name,LeaguePoints,Regions'];
+  for (const p of filtered) {
+    const rstr = (p.regions || []).join('|') || 'Unknown';
+    rows.push(`${p.rank},"${p.name}",${p.points},"${rstr}"`);
+  }
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'league_export.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function init() {
+  buildRegionList();
+
+  // Wire up controls
+  document.getElementById('search-input').addEventListener('input', onSearchChange);
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    document.querySelectorAll('#region-list input').forEach(cb => cb.checked = false);
+    document.getElementById('search-input').value = '';
+    applyFilter();
+  });
+  document.getElementById('export-btn').addEventListener('click', exportCSV);
+  document.getElementById('sidebar-export-btn').addEventListener('click', exportCSV);
+  document.querySelectorAll('.th').forEach(th => {
+    th.addEventListener('click', () => sortPlayers(th.dataset.col));
+  });
+  document.querySelectorAll('input[name="matchmode"]').forEach(r => {
+    r.addEventListener('change', applyFilter);
+  });
+
+  // Load data
+  try {
+    const resp = await fetch('leaderboard_data.json');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — could not load leaderboard_data.json`);
+    const data = await resp.json();
+
+    allPlayers = data.players || [];
+    filtered   = [...allPlayers];
+    generatedAt = data.generated || '';
+
+    if (generatedAt) {
+      const d = new Date(generatedAt);
+      document.getElementById('generated-time').innerHTML =
+        `Data snapshot<br>${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+    }
+
+    renderTable();
+    updateStats();
+    document.getElementById('status-text').textContent =
+      `${allPlayers.length.toLocaleString()} players loaded.`;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display     = 'flex';
+
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display     = 'flex';
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'block';
+    errEl.innerHTML =
+      `<strong>⚠ Could not load leaderboard_data.json</strong><br><br>` +
+      `${err.message}<br><br>` +
+      `Make sure you have run <code>python export_leaderboard.py</code> and committed ` +
+      `<code>leaderboard_data.json</code> to the same folder as this <code>index.html</code>.`;
+    document.getElementById('status-text').textContent = 'Error loading data.';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
