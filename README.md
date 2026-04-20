@@ -34,7 +34,7 @@ A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and u
 
 Auto updates the rankings **every hour** or on-demand with manual **Fetch** buttons
 
-<sup> Auto update data requires a refresh to import the new rankings </sup>
+<sup> The leaderboard updates automatically every hour — refresh the page to load the latest data </sup>
 
 <div align="left">
 
