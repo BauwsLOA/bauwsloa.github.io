@@ -217,6 +217,50 @@
   #count-label  { color: var(--text-dim); font-size: 10px; }
   #region-label { color: var(--text-dim); font-size: 10px; }
 
+  #search-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  #search-btn:hover { background: var(--bg-hover); border-color: var(--gold-dim); }
+  #search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Lookup result banner */
+  #lookup-banner {
+    display: none;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 14px;
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+  }
+  #lookup-banner.visible { display: flex; }
+  #lookup-banner.found   { border-left: 3px solid var(--green-light); }
+  #lookup-banner.notfound{ border-left: 3px solid var(--red-light); }
+  #lookup-banner.searching{ border-left: 3px solid var(--gold); }
+  #lookup-dismiss {
+    margin-left: auto;
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer; font-size: 12px;
+    padding: 0 4px;
+  }
+  #lookup-dismiss:hover { color: var(--text-white); }
+
+  /* Manually looked-up row highlight */
+  .row.lookup-row { background: #1a2010 !important; }
+  .row.lookup-row:hover { background: #243018 !important; }
+
   /* ── Table ── */
   #table-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
@@ -384,9 +428,15 @@
 
       <div id="top-bar">
         <span class="icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Search player name…" autocomplete="off">
+        <input type="text" id="search-input" placeholder="Search or Enter to lookup player…" autocomplete="off">
+        <button id="search-btn">🔎 LOOKUP</button>
         <span id="count-label"></span>
         <span id="region-label"></span>
+      </div>
+
+      <div id="lookup-banner">
+        <span id="lookup-msg"></span>
+        <button id="lookup-dismiss">✕</button>
       </div>
 
       <div id="table-wrap">
@@ -417,7 +467,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONFIG — paste your Cloudflare Worker URL here
 // ─────────────────────────────────────────────────────────────────────────────
-const PROXY = "https://osrs-proxy.bauwsloa.workers.dev/";
+const PROXY = "https://YOUR_WORKER_URL.workers.dev";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Constants
@@ -671,21 +721,110 @@ function renderTable() {
   const frag = document.createDocumentFragment();
   for (const p of filtered) {
     const row = document.createElement("div");
-    row.className = "row";
+    row.className = "row" + (p._lookup ? " lookup-row" : "");
     const regions = p.regions || [];
     const regHTML = regions.length
       ? regions.map(chipHTML).join("")
       : '<span class="unknown-txt">Unknown</span>';
     const osrsUrl = `https://secure.runescape.com/m=hiscore_oldschool_seasonal/hiscorepersonal.ws?user1=${encodeURIComponent(p.name)}`;
+    const rankDisp = p.rank   ? p.rank.toLocaleString()   : "—";
+    const ptsDisp  = p.points ? p.points.toLocaleString() : "—";
     row.innerHTML =
-      `<div class="td td-rank ${rankClass(p.rank)}">${p.rank.toLocaleString()}</div>` +
+      `<div class="td td-rank ${p.rank ? rankClass(p.rank) : "rn"}">${rankDisp}</div>` +
       `<div class="td td-name"><a href="${osrsUrl}" target="_blank" rel="noopener">${escH(p.name)}</a></div>` +
-      `<div class="td td-pts">${p.points.toLocaleString()}</div>` +
+      `<div class="td td-pts">${ptsDisp}</div>` +
       `<div class="td td-regions">${regHTML}</div>`;
     frag.appendChild(row);
   }
   tbody.innerHTML = "";
   tbody.appendChild(frag);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Player lookup — fires on Enter or LOOKUP button when name not in table
+// ─────────────────────────────────────────────────────────────────────────────
+
+const JAGEX_PLAYER_URL = "https://secure.runescape.com/m=hiscore_oldschool_seasonal/index_lite.ws";
+
+function setLookupBanner(state, msg) {
+  const banner = document.getElementById("lookup-banner");
+  banner.className = state ? `visible ${state}` : "";
+  document.getElementById("lookup-msg").textContent = msg;
+}
+
+async function lookupPlayer() {
+  const name = document.getElementById("search-input").value.trim();
+  if (!name) return;
+
+  // Exact match already loaded — just confirm it
+  const exact = allPlayers.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (exact) {
+    setLookupBanner("found", `✔ ${exact.name} is already loaded — rank #${exact.rank ? exact.rank.toLocaleString() : "?"}.`);
+    return;
+  }
+
+  const btn = document.getElementById("search-btn");
+  btn.disabled = true;
+  setLookupBanner("searching", `🔍 Looking up "${name}"…`);
+
+  try {
+    const [hiscoreResp, templeResp] = await Promise.allSettled([
+      proxyGet(`${JAGEX_PLAYER_URL}?player=${encodeURIComponent(name)}`),
+      proxyGet(`${TEMPLE_API}?player=${encodeURIComponent(name)}`),
+    ]);
+
+    let rank = null, points = null, regions = [];
+
+    // Jagex CSV: overall line is "rank,level,xp" — for leagues "level" = league pts
+    if (hiscoreResp.status === "fulfilled") {
+      try {
+        const lines = (await hiscoreResp.value.text()).trim().split("\n");
+        if (lines.length > 0) {
+          const parts = lines[0].split(",");
+          const r = parseInt(parts[0]), p = parseInt(parts[1]);
+          if (!isNaN(r) && r > 0) rank   = r;
+          if (!isNaN(p) && p > 0) points = p;
+        }
+      } catch {}
+    }
+
+    // TempleOSRS regions
+    if (templeResp.status === "fulfilled") {
+      try {
+        const data = await templeResp.value.json();
+        if (!data.error && data.info) {
+          regions = parseAreas(data);
+          const pc = loadLocalCache();
+          pc[name] = regions;
+          saveLocalCache(pc);
+        }
+      } catch {}
+    }
+
+    if (!rank && !points && regions.length === 0) {
+      setLookupBanner("notfound", `✘ "${name}" not found — they may not be on the seasonal hiscores.`);
+      btn.disabled = false;
+      return;
+    }
+
+    // Remove any previous manual lookup for this name
+    const idx = allPlayers.findIndex(p => p._lookup && p.name.toLowerCase() === name.toLowerCase());
+    if (idx !== -1) allPlayers.splice(idx, 1);
+
+    const player = { rank, name, points: points || 0, regions, _lookup: true };
+    allPlayers.unshift(player);
+    applyFilter();
+
+    const rankStr = rank   ? `rank #${rank.toLocaleString()}`   : "unranked";
+    const ptsStr  = points ? `${points.toLocaleString()} pts`   : "no points data";
+    const regStr  = regions.length ? regions.join(", ")         : "no region data";
+    setLookupBanner("found", `✔ Found ${player.name} — ${rankStr}, ${ptsStr} | Regions: ${regStr}`);
+
+  } catch (e) {
+    setLookupBanner("notfound", `✘ Lookup failed: ${e.message}`);
+  }
+
+  btn.disabled = false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -813,6 +952,13 @@ async function init() {
   document.getElementById("search-input").addEventListener("input", () => {
     clearTimeout(debounceT);
     debounceT = setTimeout(applyFilter, 180);
+  });
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") lookupPlayer();
+  });
+  document.getElementById("search-btn").addEventListener("click", lookupPlayer);
+  document.getElementById("lookup-dismiss").addEventListener("click", () => {
+    setLookupBanner(null, "");
   });
   document.getElementById("clear-btn").addEventListener("click", () => {
     document.querySelectorAll("#region-list input").forEach(cb => cb.checked=false);
