@@ -19,7 +19,7 @@
 
 ## What it does
 
-A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and unlocked region data for the top players and presents it in a fast, filterable dark-themed interface.
+A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and unlocked region data for players and presents it in a filterable interface.
 
 - **⚔ Fetch Leaderboard** — loads up to 500+ players from Jagex's seasonal hiscores
 - **🗺 Fetch Regions** — pulls each player's unlocked regions from TempleOSRS
@@ -32,31 +32,18 @@ A live leaderboard tracker for OSRS Leagues VI. Pulls rank, league points, and u
 
 ## How it works
 
-GitHub Actions runs `export_leaderboard.py` every hour, fetches fresh data through the Cloudflare Worker (to avoid Jagex IP blocks), and commits the result back as `leaderboard_data.json`. The site loads this snapshot on page open, and the live fetch buttons let you pull fresher data on demand.
+Auto updates the ranking every hour or on demand with manual 'Fetch' buttons
+1. Press 'Fetch Leaderboards'
+2. Press 'Fetch Regions'
+3. Maximum fetchable pages set to 25, if the character you want to lookup is not showing up then type the RSN in the search bar and hit 'Lookup', it will then specifically fetch that player's data
 
-```
-GitHub Actions (hourly)
-  → export_leaderboard.py
-  → Cloudflare Worker proxy
-  → Jagex hiscores + TempleOSRS
-  → leaderboard_data.json committed to repo
-  → GitHub Pages serves it
-```
 
----
-
-## Stack
-
-| | |
-|---|---|
-| Frontend | HTML / CSS / Vanilla JS |
-| Hosting | GitHub Pages |
-| Auto-update | GitHub Actions |
-| CORS Proxy | Cloudflare Workers |
-| Data | Jagex Hiscores + TempleOSRS |
+   ~ Auto updater is set to run hourly via GitHub ~
 
 ---
 
 <div align="center">
 <sub>Not affiliated with Jagex or TempleOSRS.</sub>
 </div>
+
+<sub>This project is licensed under the [MIT License](LICENSE).</sub>
