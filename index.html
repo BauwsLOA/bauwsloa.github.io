@@ -858,7 +858,7 @@ async function lookupPlayer() {
         } else {
           // Player not tracked on TempleOSRS — silently submit a tracking request
           // so they'll be available on the next lookup
-          proxyGet(`https://templeosrs.com/php/add_datapoint.php?player=${encodeURIComponent(name)}`).catch(() => {});
+          fetch(`https://templeosrs.com/php/add_datapoint.php?player=${encodeURIComponent(name)}`).catch(() => {});
         }
       } catch {}
     }
