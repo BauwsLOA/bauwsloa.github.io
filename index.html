@@ -795,7 +795,14 @@ async function lookupPlayer() {
   // Exact match already loaded — just confirm it
   const exact = allPlayers.find(p => p.name.toLowerCase() === name.toLowerCase());
   if (exact) {
-    setLookupBanner("found", `✔ ${exact.name} is already loaded — rank #${exact.rank ? exact.rank.toLocaleString() : "?"}.`);
+    if (!exact.regions || exact.regions.length === 0) {
+      const tName = encodeURIComponent(exact.name);
+      fetch(`https://templeosrs.com/player/overview.php?player=${tName}`).catch(() => {});
+      fetch(`https://templeosrs.com/php/add_datapoint.php?player=${tName}`).catch(() => {});
+      setLookupBanner("found", `✔ ${exact.name} is already loaded — rank #${exact.rank ? exact.rank.toLocaleString() : "?"}. Regions unknown — tracking request submitted to TempleOSRS.`);
+    } else {
+      setLookupBanner("found", `✔ ${exact.name} is already loaded — rank #${exact.rank ? exact.rank.toLocaleString() : "?"}.`);
+    }
     return;
   }
 
