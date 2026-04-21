@@ -268,7 +268,7 @@
     background: var(--bg-card);
     border-bottom: 1px solid var(--gold-dim);
     display: grid;
-    grid-template-columns: 70px 220px 110px 1fr;
+    grid-template-columns: 70px 220px 110px 80px 1fr;
     flex-shrink: 0;
   }
   .th {
@@ -291,7 +291,7 @@
 
   .row {
     display: grid;
-    grid-template-columns: 70px 220px 110px 1fr;
+    grid-template-columns: 70px 220px 110px 80px 1fr;
     height: 32px; align-items: center;
     border-bottom: 1px solid rgba(51,48,37,0.4);
     transition: background 0.08s;
@@ -319,6 +319,25 @@
     white-space: nowrap; flex-shrink: 0;
   }
   .unknown-txt { color: var(--text-muted); font-size: 10px; }
+
+  .td-pct { text-align: right; padding-right: 8px; font-size: 10px; color: var(--text-dim); }
+  .pct-bar-wrap {
+    width: 52px; height: 6px;
+    background: var(--bg-card);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  .pct-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--gold-dim);
+    transition: width 0.2s;
+  }
+  .pct-bar.pct-high { background: var(--gold); }
+  .th-pct { justify-content: flex-end; padding-right: 8px; }
 
   #empty-state {
     display: none; text-align: center;
@@ -385,10 +404,6 @@
       <p>Leagues VI &nbsp;•&nbsp; April 15 – June 10, 2026</p>
     </div>
     <div id="header-right">
-        <a href="https://github.com/BauwsLOA/OSRS-Demonic-Pacts-Leaderboards" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:11px;" onmouseover="this.style.color='var(--text-white)'" onmouseout="this.style.color='var(--text-dim)'">
-        <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-      </a>
       <div id="generated-time"></div>
     </div>
   </div>
@@ -448,6 +463,7 @@
           <div class="th th-rank" data-col="rank">RANK <span class="sort-arrow">▼</span></div>
           <div class="th"         data-col="name">PLAYER NAME <span class="sort-arrow"></span></div>
           <div class="th th-pts"  data-col="points">LEAGUE PTS <span class="sort-arrow"></span></div>
+          <div class="th th-pct"  data-col="pct">% MAX <span class="sort-arrow"></span></div>
           <div class="th"         data-col="regions">REGIONS <span class="sort-arrow"></span></div>
         </div>
 
@@ -459,14 +475,10 @@
         </div>
       </div>
 
-  <div id="status-bar">
-    <a href="https://github.com/BauwsLOA/OSRS-Demonic-Pacts-Leaderboards" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:11px;" onmouseover="this.style.color='var(--text-white)'" onmouseout="this.style.color='var(--text-dim)'">
-      <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-    </a>
-    <span id="status-text">Loading…</span>
-    <button id="export-btn">↓ Export CSV</button>
-  </div>
+      <div id="status-bar">
+        <span id="status-text">Loading…</span>
+        <button id="export-btn">↓ Export CSV</button>
+      </div>
     </div>
   </div>
 </div>
@@ -476,6 +488,7 @@
 //  CONFIG — paste your Cloudflare Worker URL here
 // ─────────────────────────────────────────────────────────────────────────────
 const PROXY = "https://osrs-proxy.bauwsloa.workers.dev";
+const MAX_PTS = 96040;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Constants
@@ -737,10 +750,17 @@ function renderTable() {
     const osrsUrl = `https://secure.runescape.com/m=hiscore_oldschool_seasonal/hiscorepersonal.ws?user1=${encodeURIComponent(p.name)}`;
     const rankDisp = p.rank   ? p.rank.toLocaleString()   : "—";
     const ptsDisp  = p.points ? p.points.toLocaleString() : "—";
+    const pct      = p.points ? Math.min(100, (p.points / MAX_PTS) * 100) : 0;
+    const pctDisp  = p.points ? pct.toFixed(1) + "%" : "—";
+    const pctHigh  = pct >= 75 ? " pct-high" : "";
+    const pctHTML  = p.points
+      ? `<div class="pct-bar-wrap"><div class="pct-bar${pctHigh}" style="width:${pct.toFixed(1)}%"></div></div>${pctDisp}`
+      : "—";
     row.innerHTML =
       `<div class="td td-rank ${p.rank ? rankClass(p.rank) : "rn"}">${rankDisp}</div>` +
       `<div class="td td-name"><a href="${osrsUrl}" target="_blank" rel="noopener">${escH(p.name)}</a></div>` +
       `<div class="td td-pts">${ptsDisp}</div>` +
+      `<div class="td td-pct">${pctHTML}</div>` +
       `<div class="td td-regions">${regHTML}</div>`;
     frag.appendChild(row);
   }
@@ -890,9 +910,11 @@ function sortPlayers(col) {
   allPlayers.sort((a,b) => {
     let va = col==="regions" ? (a.regions||[]).length
            : col==="name"    ? a.name.toLowerCase()
+           : col==="pct"     ? (a.points||0)
            : a[col]||0;
     let vb = col==="regions" ? (b.regions||[]).length
            : col==="name"    ? b.name.toLowerCase()
+           : col==="pct"     ? (b.points||0)
            : b[col]||0;
     if (va<vb) return sortRev?1:-1;
     if (va>vb) return sortRev?-1:1;
