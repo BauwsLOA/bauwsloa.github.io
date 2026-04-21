@@ -421,9 +421,9 @@
 
       <div class="pages-row">
         <span>Pages:</span>
-        <input type="number" id="pages-input" value="4" min="1" max="800">
-        <span style="color:var(--text-muted)">×25</span>
+        <input type="number" id="pages-input" value="4" min="1" max="25">
       </div>
+      <div style="padding: 0 12px 6px; font-size: 9px; color: var(--text-muted);">25 players/page • max 25 pages</div>
 
       <button class="fetch-btn" id="btn-fetch-lb">⚔ FETCH LEADERBOARD</button>
       <button class="fetch-btn" id="btn-fetch-reg">🗺 FETCH REGIONS</button>
@@ -610,7 +610,7 @@ async function fetchLeaderboard() {
   if (fetching) return;
   fetching = true;
 
-  const pages = Math.max(1, Math.min(parseInt(document.getElementById("pages-input").value) || 4, 800));
+  const pages = Math.max(1, Math.min(parseInt(document.getElementById("pages-input").value) || 4, 25));
   const pc    = loadLocalCache();
 
   setStatus("Fetching leaderboard…", "gold");
