@@ -1,6 +1,4 @@
 <div align="center">
-
-<div align="center">
 <img src="https://oldschool.runescape.wiki/images/Demonic_Pacts_League_logo.png?4aaa2" alt="Demonic Pacts Logo" width="340"/>
 
 
@@ -42,14 +40,14 @@ Auto updates the rankings or on-demand with manual **Fetch** buttons
 2. Press **Fetch Regions**
 3. Maximum fetchable highscore pages is set to 25 (each page has 25 players for a total of top 625), if the character you want to lookup is not within that range then type the RSN in the search bar and hit **Lookup**, it will then specifically fetch that player's data and present it at the top of the list.
 
-> If a player's regions are 'Unknown' you can fetch them by going to TempleOSRS yourself and tracking them, their information will then be available for this
+> If a player's regions show as **Unknown**, search their name and hit **Lookup** — a link will appear in the banner to their TempleOSRS page where you can submit a tracking request. Their region data will be available after they are tracked.
 
 </div>
 
 ---
 
 <div align="center">
-<sub>Not affiliated with Jagex or TempleOSRS.</sub>
-</div>
 
-<sub>This project is licensed under the [MIT License](LICENSE).</sub>
+<sub>Not affiliated with Jagex or TempleOSRS. &nbsp;|&nbsp; Licensed under the [MIT License](LICENSE).</sub>
+
+</div>
