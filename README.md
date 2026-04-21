@@ -42,7 +42,7 @@ Auto updates the rankings or on-demand with manual **Fetch** buttons
 2. Press **Fetch Regions**
 3. Maximum fetchable highscore pages is set to 25 (each page has 25 players for a total of top 625), if the character you want to lookup is not within that range then type the RSN in the search bar and hit **Lookup**, it will then specifically fetch that player's data and present it at the top of the list.
 
-> If a player's regions are 'Unknown' you can fetch them by specifically searching for them and then hitting **Lookup** after filling their name in the search bar (their region data will not be immediately available and will become available after the next auto update)
+> If a player's regions are 'Unknown' you can fetch them by going to TempleOSRS yourself and tracking them, their information will then be available for this
 
 </div>
 
