@@ -140,7 +140,7 @@
   #table-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   #thead { background: var(--bg-card); border-bottom: 1px solid var(--gold-dim);
     display: grid;
-    grid-template-columns: 70px 150px 110px 150px 80px 1fr;
+    grid-template-columns: 70px 125px 110px 100px 80px 1fr;
     flex-shrink: 0; }
   .th { padding: 6px 8px; font-size: 9px; font-weight: bold; color: var(--gold);
     letter-spacing: 0.06em; cursor: pointer; user-select: none;
@@ -158,7 +158,7 @@
   #tbody-scroll::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
   .row { display: grid;
-    grid-template-columns: 70px 200px 110px 150px 80px 1fr;
+    grid-template-columns: 70px 125px 110px 100px 80px 1fr;
     height: 32px; align-items: center;
     border-bottom: 1px solid rgba(51,48,37,0.4); transition: background 0.08s; }
   .row:nth-child(even) { background: var(--bg-row-b); }
@@ -187,9 +187,9 @@
   .trophy-label { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; }
 
   /* ── Progress column ── */
-  .td-progress { padding: 0 8px; display: flex; align-items: center; gap: 5px; overflow: hidden; }
-  .prog-bar-wrap { flex: 1; min-width: 0; height: 6px; background: var(--bg-card);
-    border-radius: 3px; overflow: hidden; flex-shrink: 0; width: 52px; }
+  .td-progress { padding: 0 6px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
+  .prog-bar-wrap { height: 6px; background: var(--bg-card);
+    border-radius: 3px; overflow: hidden; flex-shrink: 0; width: 42px; }
   .prog-bar { height: 100%; border-radius: 3px; transition: width 0.3s; }
   .prog-bar.tier-dragon   { background: #c8a84b; }
   .prog-bar.tier-rune     { background: #4a9b7f; }
@@ -315,9 +315,9 @@
           <div class="th th-rank" data-col="rank">RANK <span class="sort-arrow">▼</span></div>
           <div class="th"         data-col="name">PLAYER NAME <span class="sort-arrow"></span></div>
           <div class="th th-pts"  data-col="points">LEAGUE PTS <span class="sort-arrow"></span></div>
-          <div class="th"         data-col="regions">REGIONS <span class="sort-arrow"></span></div>
+          <div class="th"         data-col="progress">% TO MAX <span class="sort-arrow"></span></div>
           <div class="th"         data-col="trophy">TROPHY <span class="sort-arrow"></span></div>
-          <div class="th"         data-col="progress">WEIGHTED PROGRESS <span class="sort-arrow"></span></div>
+          <div class="th"         data-col="regions">REGIONS <span class="sort-arrow"></span></div>
         </div>
         <div id="error-msg"></div>
         <div id="tbody-scroll">
@@ -664,17 +664,17 @@ function renderTable() {
       `<div class="td td-rank ${p.rank ? rankClass(p.rank) : "rn"}">${rankDisp}</div>` +
       `<div class="td td-name"><a href="${osrsUrl}" target="_blank" rel="noopener">${escH(p.name)}</a></div>` +
       `<div class="td td-pts">${ptsDisp}</div>` +
-      `<div class="td td-regions">${regHTML}</div>` +
-      `<div class="td td-trophy" title="${trophyTip}">` +
-        (trophy.icon ? `<span class="trophy-badge">${trophy.icon}</span>` : "") +
-        `<span class="trophy-label">${trophy.name}</span>` +
-      `</div>` +
       `<div class="td td-progress" title="${ptsDisp} / ${regMax.toLocaleString()} pts — ${maxLabel}">` +
         `<div class="prog-bar-wrap">` +
           `<div class="prog-bar ${barCls}" style="width:${pct.toFixed(1)}%"></div>` +
         `</div>` +
         `<span class="prog-pct">${pctDisp}</span>` +
-      `</div>`;
+      `</div>` +
+      `<div class="td td-trophy" title="${trophyTip}">` +
+        (trophy.icon ? `<span class="trophy-badge">${trophy.icon}</span>` : "") +
+        `<span class="trophy-label">${trophy.name}</span>` +
+      `</div>` +
+      `<div class="td td-regions">${regHTML}</div>`;
 
     frag.appendChild(row);
   }
