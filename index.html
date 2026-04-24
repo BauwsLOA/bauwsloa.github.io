@@ -93,6 +93,20 @@
     cursor: pointer; text-align: left; transition: background 0.15s, color 0.15s; }
   .sb-btn:hover { background: var(--bg-hover); color: var(--text-white); }
 
+  /* ── Raids filter ── */
+  .raids-options { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 6px; }
+  .raid-btn {
+    padding: 6px 10px; border-radius: 3px; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    cursor: pointer; text-align: left;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .raid-btn:hover { background: var(--bg-hover); color: var(--text-white); }
+  .raid-btn.active-default  { border-color: var(--text-muted); color: var(--text-white); background: var(--bg-hover); }
+  .raid-btn.active-with     { border-color: #3a8a3a; color: #ccffcc; background: #1a2e1a; }
+  .raid-btn.active-without  { border-color: #8b1a1a; color: #ffcccc; background: #2a1010; }
+
   /* ── Trophy legend ── */
   #trophy-legend { margin: 0 12px 4px; padding: 8px 10px; background: var(--bg-card);
     border-radius: 4px; border: 1px solid var(--border); }
@@ -281,6 +295,17 @@
       <div id="progress-wrap"><div id="progress-bar"></div></div>
 
       <div class="sb-divider"></div>
+      <div class="sb-section">FILTER BY RAIDS</div>
+      <div class="raids-options">
+        <button class="raid-btn active-default" data-raid="default">⚔ Default (show all)</button>
+        <button class="raid-btn" data-raid="with">✔ With Raids</button>
+        <button class="raid-btn" data-raid="without">✘ Without Raids</button>
+      </div>
+      <div style="padding: 0 12px 6px; font-size: 9px; color: var(--text-muted); line-height: 1.5;">
+        Raid regions: Morytania, Kebos &amp; Kourend, Desert
+      </div>
+
+      <div class="sb-divider"></div>
       <div id="region-limit-msg" style="display:none;margin:0 12px 4px;padding:5px 8px;background:#2a0808;border:1px solid var(--red);border-radius:3px;font-size:9px;color:#ffaaaa;">
         Max 3 regions can be selected at once.
       </div>
@@ -306,8 +331,6 @@
         <div class="trophy-row"><span class="trophy-icon">🪙</span><span class="trophy-name">Bronze</span><span class="trophy-pts">2,000</span></div>
       </div>
 
-      <div class="sb-divider"></div>
-      <button class="sb-btn" id="sidebar-export-btn">↓&nbsp; Export CSV</button>
     </div>
 
     <!-- Content -->
@@ -562,6 +585,10 @@ let sortCol     = "rank";
 let sortRev     = false;
 let debounceT   = null;
 let fetching    = false;
+let raidFilter  = "default"; // "default" | "with" | "without"
+
+// Regions that unlock raids (ToB, CoX, ToA)
+const RAID_REGIONS = new Set(["Morytania", "Kebos and Kourend", "Desert"]);
 const LS_KEY    = "demonic_pacts_players_v2";
 
 function loadLocalCache() {
@@ -890,6 +917,12 @@ function applyFilter() {
         : [...selSet].some(r  => pr.has(r));
     });
   }
+  if (raidFilter !== "default") {
+    result = result.filter(p => {
+      const hasRaid = (p.regions||[]).some(r => RAID_REGIONS.has(r));
+      return raidFilter === "with" ? hasRaid : !hasRaid;
+    });
+  }
   filtered = result;
   renderTable();
   updateStats();
@@ -1029,18 +1062,36 @@ async function init() {
     document.querySelectorAll("#region-list input").forEach(cb => cb.checked=false);
     document.getElementById("region-limit-msg").style.display = "none";
     document.getElementById("search-input").value = "";
+    raidFilter = "default";
+    document.querySelectorAll(".raid-btn").forEach(b => {
+      b.classList.remove("active-default", "active-with", "active-without");
+    });
+    document.querySelector(".raid-btn[data-raid='default']").classList.add("active-default");
     applyFilter();
   });
   document.getElementById("btn-fetch-lb").addEventListener("click",  fetchLeaderboard);
   document.getElementById("btn-fetch-reg").addEventListener("click", fetchRegions);
-  document.getElementById("export-btn").addEventListener("click",         exportCSV);
-  document.getElementById("sidebar-export-btn").addEventListener("click", exportCSV);
+  document.getElementById("export-btn").addEventListener("click", exportCSV);
   document.querySelectorAll(".th").forEach(th =>
     th.addEventListener("click", () => sortPlayers(th.dataset.col))
   );
   document.querySelectorAll("input[name=matchmode]").forEach(r =>
     r.addEventListener("click", applyFilter)
   );
+
+  document.querySelectorAll(".raid-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      raidFilter = btn.dataset.raid;
+      document.querySelectorAll(".raid-btn").forEach(b => {
+        b.classList.remove("active-default", "active-with", "active-without");
+      });
+      btn.classList.add(
+        raidFilter === "default" ? "active-default" :
+        raidFilter === "with"    ? "active-with"    : "active-without"
+      );
+      applyFilter();
+    });
+  });
 
   // Load snapshot
   try {
