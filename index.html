@@ -140,7 +140,7 @@
   #table-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   #thead { background: var(--bg-card); border-bottom: 1px solid var(--gold-dim);
     display: grid;
-    grid-template-columns: 70px 125px 110px 100px 80px 1fr;
+    grid-template-columns: 70px 125px 110px 100px 80px 1fr; /* add ~220px before 1fr when Tasks Left column is uncommented */
     flex-shrink: 0; }
   .th { padding: 6px 8px; font-size: 9px; font-weight: bold; color: var(--gold);
     letter-spacing: 0.06em; cursor: pointer; user-select: none;
@@ -158,7 +158,7 @@
   #tbody-scroll::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
   .row { display: grid;
-    grid-template-columns: 70px 125px 110px 100px 80px 1fr;
+    grid-template-columns: 70px 125px 110px 100px 80px 1fr; /* add ~220px before 1fr when Tasks Left column is uncommented */
     height: 32px; align-items: center;
     border-bottom: 1px solid rgba(51,48,37,0.4); transition: background 0.08s; }
   .row:nth-child(even) { background: var(--bg-row-b); }
@@ -185,6 +185,19 @@
   .td-trophy { display: flex; align-items: center; gap: 5px; padding: 0 8px; overflow: hidden; }
   .trophy-badge { font-size: 14px; line-height: 1; flex-shrink: 0; }
   .trophy-label { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; }
+
+  /* TASKS LEFT COLUMN CSS — uncomment when data source is available
+  .th-tasks { justify-content: center; }
+  .td-tasks {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 0 8px; overflow: hidden; white-space: nowrap;
+    font-size: 10px;
+  }
+  .task-tier { font-weight: bold; }
+  .task-sep  { color: var(--text-muted); }
+  .task-count { color: var(--text-dim); }
+  .task-done  { color: var(--gold); }
+  */
 
   /* ── Progress column ── */
   .td-progress { padding: 0 6px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
@@ -317,6 +330,9 @@
           <div class="th th-pts"  data-col="points">LEAGUE PTS <span class="sort-arrow"></span></div>
           <div class="th"         data-col="progress">% TO MAX <span class="sort-arrow"></span></div>
           <div class="th"         data-col="trophy">TROPHY <span class="sort-arrow"></span></div>
+          <!-- TASKS LEFT COLUMN HEADER — uncomment when data source is available
+          <div class="th th-tasks"     data-col="tasks">TASKS LEFT <span class="sort-arrow"></span></div>
+          -->
           <div class="th"         data-col="regions">REGIONS <span class="sort-arrow"></span></div>
         </div>
         <div id="error-msg"></div>
@@ -346,6 +362,85 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const PROXY = "https://osrs-proxy.bauwsloa.workers.dev";
 const MAX_PTS = 96040; // confirmed: General(66040) + 3 optional regions × 10,000
+
+/* TASKS LEFT — task counts per tier available to a max player (General + Varlamore + Karamja + 3 regions)
+ * Source: OSRS Wiki tasks table
+ * Points: Easy=10, Medium=30, Hard=80, Elite=200, Master=400
+ * When a data source is found that returns per-tier completion counts, uncomment
+ * the Tasks Left column and wire fetchPlayerTasks() into fetchRegions() alongside
+ * the TempleOSRS call.
+ *
+ * MAX TASKS BY TIER (General + Varlamore + Karamja + 3 optional regions, confirmed wiki):
+ *   Easy:   ~122  Medium: ~255  Hard: ~120  Elite: ~171  Master: ~17
+ *   (exact counts vary slightly by which 3 optional regions are chosen)
+ *
+ * TIER COLORS (for .task-tier spans):
+ *   Easy:   #cd7f32  (bronze)
+ *   Medium: #c0c0c0  (silver — brightened for dark bg readability)
+ *   Hard:   #6b8e23  (army green — use #8aad2a for better contrast on dark bg)
+ *   Elite:  #2a9d8f  (teal)
+ *   Master: #e63946  (red — brightened from #c0392b for dark bg readability)
+ *   Done:   #c8a84b  (gold — used when a tier has 0 remaining)
+ *
+ * PLANNED API: WikiSync (api.weirdgloop.org) returns array of completed varbit IDs.
+ * Requires: varbit ID → task difficulty mapping (from wiki MediaWiki modules).
+ * Blocked by: wiki's third-party API restriction + missing public varbit→tier map.
+ * Alternative: TempleOSRS may add per-tier task tracking in future league updates.
+ */
+
+/*
+const TASK_TIER_COLORS = {
+  easy:   '#cd7f32',
+  medium: '#c0c0c0',
+  hard:   '#8aad2a',
+  elite:  '#2a9d8f',
+  master: '#e63946',
+  done:   '#c8a84b',
+};
+
+// Fetch per-tier task completion counts for a player
+// Returns: { easy, medium, hard, elite, master } counts of REMAINING tasks
+// or null if data not available
+async function fetchPlayerTasks(name, session) {
+  // TODO: implement when data source is available
+  // Likely endpoint: proxyGet(`https://api.weirdgloop.org/osrs/v1/wikisync/${encodeURIComponent(name)}`)
+  // Response will be: { leagues: [varbitId1, varbitId2, ...] }
+  // Then cross-reference with varbit→tier map to count completions per tier
+  // Return: { easy: X, medium: X, hard: X, elite: X, master: X }
+  return null;
+}
+
+// Build the Tasks Left cell HTML from tier counts
+// completedCounts: { easy, medium, hard, elite, master } — tasks COMPLETED
+// totalCounts:     { easy, medium, hard, elite, master } — tasks AVAILABLE to player
+function buildTasksLeftHTML(completedCounts, totalCounts) {
+  if (!completedCounts || !totalCounts) {
+    return '<span style="color:var(--text-muted);font-size:10px;">—</span>';
+  }
+  const tiers = [
+    { key: 'easy',   abbr: 'E'   },
+    { key: 'medium', abbr: 'Med' },
+    { key: 'hard',   abbr: 'H'   },
+    { key: 'elite',  abbr: 'El'  },
+    { key: 'master', abbr: 'M'   },
+  ];
+  const parts = [];
+  for (const { key, abbr } of tiers) {
+    const remaining = (totalCounts[key] || 0) - (completedCounts[key] || 0);
+    const color = remaining === 0 ? TASK_TIER_COLORS.done : TASK_TIER_COLORS[key];
+    if (remaining === 0) {
+      // Tier complete — show only gold abbreviation, no count
+      parts.push(`<span class="task-tier task-done" style="color:${color}">${abbr}</span>`);
+    } else {
+      parts.push(
+        `<span class="task-tier" style="color:${color}">${abbr}</span>` +
+        `<span class="task-count"> = ${remaining}</span>`
+      );
+    }
+  }
+  return parts.join('<span class="task-sep"> | </span>');
+}
+*/
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TASK / TROPHY CONSTANTS
@@ -674,6 +769,11 @@ function renderTable() {
         (trophy.icon ? `<span class="trophy-badge">${trophy.icon}</span>` : "") +
         `<span class="trophy-label">${trophy.name}</span>` +
       `</div>` +
+      /* TASKS LEFT CELL — uncomment when data source is available
+         Also uncomment: th header above, CSS block, JS functions, grid column width,
+         and wire fetchPlayerTasks() into fetchRegions() / lookupPlayer()
+      `<div class="td td-tasks">${buildTasksLeftHTML(p.tasksCompleted, p.tasksTotal)}</div>` +
+      */
       `<div class="td td-regions">${regHTML}</div>`;
 
     frag.appendChild(row);
