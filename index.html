@@ -257,14 +257,16 @@
 <body>
 
 <div id="loading">
-  <div class="spinner"></div>
-  <h2>☠ Demonic Pacts League</h2>
+  <img id="loading-logo"
+    alt="Demonic Pacts League"
+    style="height:64px; width:auto; display:block; margin-bottom:4px;">
+  <h2>Demonic Pacts League</h2>
   <p>Loading leaderboard data…</p>
 </div>
 
 <div id="app" style="display:none;">
   <div id="header">
-    <img src="https://oldschool.runescape.wiki/images/Demonic_Pacts_League_logo.png?4aaa2"
+    <img id="header-logo"
       alt="Demonic Pacts League"
       style="height:48px; width:auto; display:block; flex-shrink:0;">
     <div id="header-text">
@@ -395,6 +397,7 @@ const CONFIG = {
   proxyUrl:      "https://osrs-proxy.bauwsloa.workers.dev",
   templeApi:     "https://templeosrs.com/api/leagues/vi/tracking.php",
   templeTrackUrl: (name) => `https://templeosrs.com/leagues/vi/tracking.php?player=${encodeURIComponent(name)}`,
+  leagueLogoUrl: "https://oldschool.runescape.wiki/images/Demonic_Pacts_League_logo.png?4aaa2",
 };
 
 const PROXY = CONFIG.proxyUrl;
@@ -1029,6 +1032,8 @@ async function init() {
   document.getElementById("league-title").textContent = CONFIG.leagueName.toUpperCase() + " LEAGUE";
   document.getElementById("league-dates").innerHTML =
     `Leagues ${CONFIG.leagueNumber} &nbsp;•&nbsp; ${CONFIG.leagueStart} – ${CONFIG.leagueEnd}`;
+  document.getElementById("header-logo").src  = CONFIG.leagueLogoUrl;
+  document.getElementById("loading-logo").src = CONFIG.leagueLogoUrl;
 
   buildRegionList();
   document.getElementById("search-input").addEventListener("input", () => {
