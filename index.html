@@ -199,19 +199,6 @@
   .trophy-badge { font-size: 14px; line-height: 1; flex-shrink: 0; }
   .trophy-label { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; }
 
-  /* TASKS LEFT COLUMN CSS — uncomment when data source is available
-  .th-tasks { justify-content: center; }
-  .td-tasks {
-    display: flex; align-items: center; justify-content: center;
-    gap: 6px; padding: 0 8px; overflow: hidden; white-space: nowrap;
-    font-size: 10px;
-  }
-  .task-tier { font-weight: bold; }
-  .task-sep  { color: var(--text-muted); }
-  .task-count { color: var(--text-dim); }
-  .task-done  { color: var(--gold); }
-  */
-
   /* ── Progress column ── */
   .td-progress { padding: 0 6px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
   .prog-bar-wrap { height: 6px; background: var(--bg-card);
@@ -226,6 +213,19 @@
   .prog-bar.tier-bronze   { background: #9b6a3a; }
   .prog-bar.tier-none     { background: var(--text-muted); }
   .prog-pct { font-size: 9px; color: var(--text-dim); white-space: nowrap; min-width: 36px; text-align: right; }
+
+  /* TASKS LEFT COLUMN CSS — uncomment when data source is available
+  .th-tasks { justify-content: center; }
+  .td-tasks {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 0 8px; overflow: hidden; white-space: nowrap;
+    font-size: 10px;
+  }
+  .task-tier { font-weight: bold; }
+  .task-sep  { color: var(--text-muted); }
+  .task-count { color: var(--text-dim); }
+  .task-done  { color: var(--gold); }
+  */
 
   #empty-state { display: none; text-align: center; padding: 60px 20px;
     color: var(--text-muted); font-size: 13px; }
@@ -268,8 +268,8 @@
       alt="Demonic Pacts League"
       style="height:48px; width:auto; display:block; flex-shrink:0;">
     <div id="header-text">
-      <h1>DEMONIC PACTS LEAGUE</h1>
-      <p>Leagues VI &nbsp;•&nbsp; April 15 – June 10, 2026</p>
+      <h1 id="league-title"></h1>
+      <p id="league-dates"></p>
     </div>
     <div id="header-right">
       <a href="https://github.com/BauwsLOA/OSRS-Demonic-Pacts-Leaderboards" target="_blank" rel="noopener"
@@ -331,7 +331,6 @@
         <div class="trophy-row"><span class="trophy-icon">🔨</span><span class="trophy-name">Iron</span><span class="trophy-pts">4,000</span></div>
         <div class="trophy-row"><span class="trophy-icon">🪙</span><span class="trophy-name">Bronze</span><span class="trophy-pts">2,000</span></div>
       </div>
-
     </div>
 
     <!-- Content -->
@@ -385,10 +384,50 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONFIG
+//  CONFIG — update these values for each new league
 // ─────────────────────────────────────────────────────────────────────────────
-const PROXY = "https://osrs-proxy.bauwsloa.workers.dev";
-const MAX_PTS = 96040; // confirmed: General(66040) + 3 optional regions × 10,000
+const CONFIG = {
+  leagueName:    "Demonic Pacts",
+  leagueNumber:  "VI",
+  leagueStart:   "April 15, 2026",
+  leagueEnd:     "June 10, 2026",
+  maxPts:        96040,
+  proxyUrl:      "https://osrs-proxy.bauwsloa.workers.dev",
+  templeApi:     "https://templeosrs.com/api/leagues/vi/tracking.php",
+  templeTrackUrl: (name) => `https://templeosrs.com/leagues/vi/tracking.php?player=${encodeURIComponent(name)}`,
+};
+
+const PROXY = CONFIG.proxyUrl;
+const MAX_PTS = CONFIG.maxPts;
+
+const TROPHY_TIERS = [
+  { name: "Dragon",  pts: 65000, icon: "🏆", cls: "tier-dragon"  },
+  { name: "Rune",    pts: 47500, icon: "⚔️",  cls: "tier-rune"   },
+  { name: "Adamant", pts: 32000, icon: "🛡️",  cls: "tier-adamant"},
+  { name: "Mithril", pts: 22000, icon: "💎",  cls: "tier-mithril"},
+  { name: "Steel",   pts: 10000, icon: "🔩",  cls: "tier-steel"  },
+  { name: "Iron",    pts:  4000, icon: "🔨",  cls: "tier-iron"   },
+  { name: "Bronze",  pts:  2000, icon: "🪙",  cls: "tier-bronze" },
+  { name: "—",       pts:     0, icon: "",    cls: "tier-none"   },
+];
+
+function calcRegionalMax(regions) {
+  return MAX_PTS;
+}
+
+function getTrophy(pts) {
+  for (const t of TROPHY_TIERS) {
+    if (pts >= t.pts) return t;
+  }
+  return TROPHY_TIERS[TROPHY_TIERS.length - 1];
+}
+
+function getNextTrophy(pts) {
+  for (let i = TROPHY_TIERS.length - 2; i >= 0; i--) {
+    if (pts < TROPHY_TIERS[i].pts) return TROPHY_TIERS[i];
+  }
+  return null;
+}
 
 /* TASKS LEFT — task counts per tier available to a max player (General + Varlamore + Karamja + 3 regions)
  * Source: OSRS Wiki tasks table
@@ -403,10 +442,10 @@ const MAX_PTS = 96040; // confirmed: General(66040) + 3 optional regions × 10,0
  *
  * TIER COLORS (for .task-tier spans):
  *   Easy:   #cd7f32  (bronze)
- *   Medium: #c0c0c0  (silver — brightened for dark bg readability)
- *   Hard:   #6b8e23  (army green — use #8aad2a for better contrast on dark bg)
+ *   Medium: #c0c0c0  (silver)
+ *   Hard:   #8aad2a  (army green)
  *   Elite:  #2a9d8f  (teal)
- *   Master: #e63946  (red — brightened from #c0392b for dark bg readability)
+ *   Master: #e63946  (red)
  *   Done:   #c8a84b  (gold — used when a tier has 0 remaining)
  *
  * PLANNED API: WikiSync (api.weirdgloop.org) returns array of completed varbit IDs.
@@ -431,8 +470,8 @@ const TASK_TIER_COLORS = {
 async function fetchPlayerTasks(name, session) {
   // TODO: implement when data source is available
   // Likely endpoint: proxyGet(`https://api.weirdgloop.org/osrs/v1/wikisync/${encodeURIComponent(name)}`)
-  // Response will be: { leagues: [varbitId1, varbitId2, ...] }
-  // Then cross-reference with varbit→tier map to count completions per tier
+  // Response: { leagues: [varbitId1, varbitId2, ...] }
+  // Cross-reference with varbit→tier map to count completions per tier
   // Return: { easy: X, medium: X, hard: X, elite: X, master: X }
   return null;
 }
@@ -470,82 +509,24 @@ function buildTasksLeftHTML(completedCounts, totalCounts) {
 */
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  TASK / TROPHY CONSTANTS
+//  TASK / TROPHY CONSTANTS (based on Demonic Pacts League info, might need to change for future leagues)
 //
 //  Confirmed point values (OSRS Wiki + community guides):
 //    Easy: 10  |  Medium: 30  |  Hard: 80  |  Elite: 200  |  Master: 400
-//
-//  From the wiki tasks table (General + all unlockable regions):
-//    Total tasks: 685  |  Total possible pts: 59,470 (general pool accessible
-//    to all) — but the actual max a player can reach depends on their regions.
-//
-//  Regional points pool (wiki table, confirmed):
-//    General:            47,240 pts  (always available)
-//    Varlamore:           2,750 pts  (always available)
-//    Karamja:             1,730 pts  (2nd unlock, always free)
-//    Each additional:    ~1,000 pts average across optional regions
 //
 //  Trophy thresholds (Jagex official):
 //    Dragon:  65,000  |  Rune:    47,500  |  Adamant: 32,000
 //    Mithril: 22,000  |  Steel:   10,000  |  Iron:     4,000  |  Bronze: 2,000
 //
-//  Max per region (wiki confirmed — every choosable region = exactly 10,000 pts):
-//    So a player with regions unlocked can earn:
-//      General (47,240) + Varlamore (2,750) + Karamja (1,730)
-//      + up to 3 more regions × 1,000 avg = ~54,720 base
-//    But Jagex confirmed every choosable region = exactly 10,000 pts each,
-//    so 3 additional regions = 30,000 pts, total possible = ~81,720 pts
-//    However the Dragon trophy only needs 65,000, which serves as our benchmark.
-//
-//  WEIGHTED PROGRESS = player_points / regional_max × 100
-//  regional_max = 47,240 (general) + 2,750 (Varlamore) + 1,730 (Karamja)
-//              + (count of optional regions × 10,000)
-//  If we don't know their regions, fall back to Dragon threshold (65,000).
-// ─────────────────────────────────────────────────────────────────────────────
-
-const TROPHY_TIERS = [
-  { name: "Dragon",  pts: 65000, icon: "🏆", cls: "tier-dragon"  },
-  { name: "Rune",    pts: 47500, icon: "⚔️",  cls: "tier-rune"   },
-  { name: "Adamant", pts: 32000, icon: "🛡️",  cls: "tier-adamant"},
-  { name: "Mithril", pts: 22000, icon: "💎",  cls: "tier-mithril"},
-  { name: "Steel",   pts: 10000, icon: "🔩",  cls: "tier-steel"  },
-  { name: "Iron",    pts:  4000, icon: "🔨",  cls: "tier-iron"   },
-  { name: "Bronze",  pts:  2000, icon: "🪙",  cls: "tier-bronze" },
-  { name: "—",       pts:     0, icon: "",    cls: "tier-none"   },
-];
-
-// Points available per region (from wiki confirmed data)
-// "Every choosable region has exactly 10,000 points of tasks"
-
-
-function calcRegionalMax(regions) {
-  // Every player can access exactly the same maximum: General + Varlamore + Karamja + 3 regions
-  // = 66,040 + 30,000 = 96,040  (confirmed from wiki: 146,040 total minus 8×10,000 optional)
-  return MAX_PTS;
-}
-
-function getTrophy(pts) {
-  for (const t of TROPHY_TIERS) {
-    if (pts >= t.pts) return t;
-  }
-  return TROPHY_TIERS[TROPHY_TIERS.length - 1];
-}
-
-function getNextTrophy(pts) {
-  for (let i = TROPHY_TIERS.length - 2; i >= 0; i--) {
-    if (pts < TROPHY_TIERS[i].pts) return TROPHY_TIERS[i];
-  }
-  return null; // already Dragon
-}
-
+//  Max pts: General(47,240) + Varlamore(2,750) + Karamja(1,730) + 3 regions × 10,000 = 96,040
 // ─────────────────────────────────────────────────────────────────────────────
 //  Other constants
 // ─────────────────────────────────────────────────────────────────────────────
-const BASE            = "https://secure.runescape.com";
+const BASE = "https://secure.runescape.com";
 const LEADERBOARD_URL = `${BASE}/m=hiscore_oldschool_seasonal/overall.ws`;
 const LEADERBOARD_PRM = { category_type: 1, table: 1 };
-const TEMPLE_API      = "https://templeosrs.com/api/leagues/vi/tracking.php";
-const JAGEX_PLAYER_URL= `${BASE}/m=hiscore_oldschool_seasonal/index_lite.ws`;
+const TEMPLE_API = CONFIG.templeApi;
+const JAGEX_PLAYER_URL = `${BASE}/m=hiscore_oldschool_seasonal/index_lite.ws`;
 
 const AREA_MAP = {
   asgarnia:   "Asgarnia",
@@ -563,7 +544,6 @@ const ALL_REGIONS = [
   "Fremennik Province","Kandarin","Kebos and Kourend",
   "Morytania","Tirannwn","Wilderness"
 ];
-
 const REGION_COLORS = {
   "Varlamore":          { bg:"#7b3f9e", fg:"#e8d0ff" },
   "Karamja":            { bg:"#2d7a3a", fg:"#0d0d0d" },
@@ -580,29 +560,38 @@ const REGION_COLORS = {
 // ─────────────────────────────────────────────────────────────────────────────
 //  State
 // ─────────────────────────────────────────────────────────────────────────────
-let allPlayers  = [];
-let filtered    = [];
-let sortCol     = "rank";
-let sortRev     = false;
-let debounceT   = null;
-let fetching    = false;
-let raidFilter  = "default"; // "default" | "with" | "without"
+let allPlayers = [];
+let filtered = [];
+let sortCol = "rank";
+let sortRev = false;
+let debounceT = null;
+let fetching = false;
+let raidFilter = "default"; // "default" | "with" | "without"
 
 // Regions that unlock raids (ToB, CoX, ToA)
 const RAID_REGIONS = new Set(["Morytania", "Kebos and Kourend", "Desert"]);
-const LS_KEY    = "demonic_pacts_players_v2";
+const LS_KEY = "demonic_pacts_players_v2";
 
 function loadLocalCache() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+  } catch {
+    return {};
+  }
 }
 function saveLocalCache(pc) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(pc)); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(pc));
+  } catch {
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Proxy helpers
 // ─────────────────────────────────────────────────────────────────────────────
-function proxyUrl(target) { return `${PROXY}?url=${encodeURIComponent(target)}`; }
+function proxyUrl(target) {
+  return `${PROXY}?url=${encodeURIComponent(target)}`;
+}
 async function proxyGet(url) {
   const r = await fetch(proxyUrl(url));
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -647,7 +636,7 @@ async function fetchLeaderboard() {
   if (fetching) return;
   fetching = true;
   const pages = Math.max(1, Math.min(parseInt(document.getElementById("pages-input").value) || 4, 25));
-  const pc    = loadLocalCache();
+  const pc = loadLocalCache();
   setStatus("Fetching leaderboard…", "gold");
   setBtnsDisabled(true);
   setProgress(0);
@@ -657,7 +646,7 @@ async function fetchLeaderboard() {
     setProgress(page / pages);
     const params = new URLSearchParams({ ...LEADERBOARD_PRM, page });
     try {
-      const r    = await proxyGet(`${LEADERBOARD_URL}?${params}`);
+      const r = await proxyGet(`${LEADERBOARD_URL}?${params}`);
       const html = await r.text();
       const rows = parseLeaderboard(html);
       if (rows.length === 0 && page > 1) break;
@@ -672,7 +661,7 @@ async function fetchLeaderboard() {
     if (page < pages) await sleep(300);
   }
   allPlayers = newPlayers;
-  filtered   = [...allPlayers];
+  filtered = [...allPlayers];
   renderTable();
   updateStats();
   setStatus(`Loaded ${allPlayers.length.toLocaleString()} players.`, "green");
@@ -688,7 +677,10 @@ async function fetchLeaderboard() {
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchRegions() {
   if (fetching) return;
-  if (allPlayers.length === 0) { setStatus("Fetch the leaderboard first.", "red"); return; }
+  if (allPlayers.length === 0) {
+    setStatus("Fetch the leaderboard first.", "red");
+    return;
+  }
   fetching = true;
   setBtnsDisabled(true);
   const needs = allPlayers.filter(p => !p.regions || p.regions.length === 0);
@@ -708,7 +700,7 @@ async function fetchRegions() {
     const batch = needs.slice(i, i + BATCH);
     await Promise.all(batch.map(async (player) => {
       try {
-        const r    = await proxyGet(`${TEMPLE_API}?player=${encodeURIComponent(player.name)}`);
+        const r = await proxyGet(`${TEMPLE_API}?player=${encodeURIComponent(player.name)}`);
         const data = await r.json();
         if (!data.error && data.info) {
           player.regions = parseAreas(data);
@@ -717,7 +709,7 @@ async function fetchRegions() {
         } else {
           player.regions = [];
         }
-      } catch { /* leave empty */ }
+      } catch {}
       done++;
     }));
     saveLocalCache(pc);
@@ -744,7 +736,9 @@ function chipHTML(region) {
 function escH(s) {
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
-function rankClass(r) { return r===1?"r1":r===2?"r2":r===3?"r3":"rn"; }
+function rankClass(r) {
+  return r===1?"r1":r===2?"r2":r===3?"r3":"rn";
+}
 
 function renderTable() {
   const tbody = document.getElementById("tbody");
@@ -759,41 +753,29 @@ function renderTable() {
   for (const p of filtered) {
     const row = document.createElement("div");
     row.className = "row" + (p._lookup ? " lookup-row" : "");
-
     const regions = p.regions || [];
-    const regHTML = regions.length
-      ? regions.map(chipHTML).join("")
-      : '<span class="unknown-txt">Unknown</span>';
-
-    const osrsUrl   = `${BASE}/m=hiscore_oldschool_seasonal/hiscorepersonal.ws?user1=${encodeURIComponent(p.name)}`;
-    const rankDisp  = p.rank   ? p.rank.toLocaleString()   : "—";
-    const ptsDisp   = p.points ? p.points.toLocaleString() : "—";
-
-    // ── Trophy ──
-    const trophy     = getTrophy(p.points || 0);
+    const regHTML = regions.length ? regions.map(chipHTML).join("") : '<span class="unknown-txt">Unknown</span>';
+    const osrsUrl = `${BASE}/m=hiscore_oldschool_seasonal/hiscorepersonal.ws?user1=${encodeURIComponent(p.name)}`;
+    const rankDisp = p.rank   ? p.rank.toLocaleString()   : "—";
+    const ptsDisp = p.points ? p.points.toLocaleString() : "—";
+    const trophy = getTrophy(p.points || 0);
     const nextTrophy = getNextTrophy(p.points || 0);
-    const trophyTip  = nextTrophy
+    const trophyTip = nextTrophy
       ? `Next: ${nextTrophy.name} (${(nextTrophy.pts - (p.points||0)).toLocaleString()} pts away)`
       : "Max trophy achieved!";
-
     // ── Weighted progress ──
-    const regMax  = calcRegionalMax(regions);
-    const pts     = p.points || 0;
-    const pct     = regMax > 0 ? Math.min(100, (pts / regMax) * 100) : 0;
+    const regMax = calcRegionalMax(regions);
+    const pts = p.points || 0;
+    const pct = regMax > 0 ? Math.min(100, (pts / regMax) * 100) : 0;
     const pctDisp = pct.toFixed(1) + "%";
     // Colour bar by current trophy tier
-    const barCls  = trophy.cls;
-    // Tooltip shows what the max is based on
-    const maxLabel = `vs max possible (${regMax.toLocaleString()} pts)`;
-
+    const barCls = trophy.cls;
     row.innerHTML =
       `<div class="td td-rank ${p.rank ? rankClass(p.rank) : "rn"}">${rankDisp}</div>` +
       `<div class="td td-name"><a href="${osrsUrl}" target="_blank" rel="noopener">${escH(p.name)}</a></div>` +
       `<div class="td td-pts">${ptsDisp}</div>` +
-      `<div class="td td-progress" title="${ptsDisp} / ${regMax.toLocaleString()} pts — ${maxLabel}">` +
-        `<div class="prog-bar-wrap">` +
-          `<div class="prog-bar ${barCls}" style="width:${pct.toFixed(1)}%"></div>` +
-        `</div>` +
+      `<div class="td td-progress" title="${pctDisp} / ${regMax.toLocaleString()} pts">` +
+        `<div class="prog-bar-wrap"><div class="prog-bar ${barCls}" style="width:${pct.toFixed(1)}%"></div></div>` +
         `<span class="prog-pct">${pctDisp}</span>` +
       `</div>` +
       `<div class="td td-trophy" title="${trophyTip}">` +
@@ -806,7 +788,6 @@ function renderTable() {
       `<div class="td td-tasks">${buildTasksLeftHTML(p.tasksCompleted, p.tasksTotal)}</div>` +
       */
       `<div class="td td-regions">${regHTML}</div>`;
-
     frag.appendChild(row);
   }
   tbody.innerHTML = "";
@@ -829,9 +810,9 @@ async function lookupPlayer() {
   if (exact) {
     const trophy = getTrophy(exact.points || 0);
     const regMax = calcRegionalMax(exact.regions);
-    const pct    = exact.points ? ((exact.points / regMax) * 100).toFixed(1) : "0.0";
+    const pct = exact.points ? ((exact.points / regMax) * 100).toFixed(1) : "0.0";
     if (!exact.regions || exact.regions.length === 0) {
-      setLookupBanner("found", `✔ ${exact.name} — rank #${exact.rank?.toLocaleString() || "?"} — Regions unknown (not tracked on TempleOSRS).`);
+      setLookupBanner("found", `✔ ${exact.name} — rank #${exact.rank?.toLocaleString() || "?"} — Regions unknown — please go track them on <a href="${CONFIG.templeTrackUrl(exact.name)}" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline;">TempleOSRS</a> then refresh this page and refetch to see their regions.`);
     } else {
       setLookupBanner("found", `✔ ${exact.name} — rank #${exact.rank?.toLocaleString() || "?"} — ${trophy.icon} ${trophy.name} (${pct}% of regional max)`);
     }
@@ -848,7 +829,7 @@ async function lookupPlayer() {
     let rank = null, points = null, regions = [];
     if (hiscoreResp.status === "fulfilled") {
       try {
-        const text  = await hiscoreResp.value.text();
+        const text = await hiscoreResp.value.text();
         const lines = text.trim().split("\n").map(l => l.trim()).filter(Boolean);
         if (lines.length > 0) {
           const r = parseInt(lines[0].split(",")[0]);
@@ -857,9 +838,8 @@ async function lookupPlayer() {
         const activityLines = lines.slice(24);
         let bestPts = 0;
         for (const line of activityLines) {
-          const parts = line.split(",");
-          const score = parseInt(parts[1]);
-          if (!isNaN(score) && score > bestPts) bestPts = score;
+          const s = parseInt(line.split(",")[1]);
+          if (!isNaN(s) && s > bestPts) bestPts = s;
         }
         if (bestPts > 0) points = bestPts;
       } catch {}
@@ -880,19 +860,20 @@ async function lookupPlayer() {
       btn.disabled = false;
       return;
     }
+
     const idx = allPlayers.findIndex(p => p._lookup && p.name.toLowerCase() === name.toLowerCase());
     if (idx !== -1) allPlayers.splice(idx, 1);
     const player = { rank, name, points: points || 0, regions, _lookup: true };
     allPlayers.unshift(player);
     applyFilter();
-    const trophy  = getTrophy(player.points);
-    const regMax  = calcRegionalMax(regions);
-    const pct     = player.points ? ((player.points / regMax) * 100).toFixed(1) : "0.0";
-    const regStr  = regions.length ? regions.join(", ") : "unknown";
+    const trophy = getTrophy(player.points);
+    // ── Weighted progress ──
+    const regMax = calcRegionalMax(regions);
+    const pct = player.points ? ((player.points / regMax) * 100).toFixed(1) : "0.0";
+    const regStr = regions.length ? regions.join(", ") : "unknown";
     const rankStr = rank ? `rank #${rank.toLocaleString()}` : "unranked";
-    const ptsStr  = points ? `${points.toLocaleString()} pts` : "no points";
-    setLookupBanner("found",
-      `✔ ${player.name} — ${rankStr}, ${ptsStr} — ${trophy.icon} ${trophy.name} (${pct}% of regional max) — Regions: ${regStr}`);
+    const ptsStr = points ? `${points.toLocaleString()} pts` : "no points";
+    setLookupBanner("found", `✔ ${player.name} — ${rankStr}, ${ptsStr} — ${trophy.icon} ${trophy.name} (${pct}% of regional max) — Regions: ${regStr}`);
   } catch (e) {
     setLookupBanner("notfound", `✘ Lookup failed: ${e.message}`);
   }
@@ -903,19 +884,15 @@ async function lookupPlayer() {
 //  Filter + sort
 // ─────────────────────────────────────────────────────────────────────────────
 function applyFilter() {
-  const query  = document.getElementById("search-input").value.toLowerCase().trim();
-  const selSet = new Set(
-    Array.from(document.querySelectorAll("#region-list input:checked")).map(cb => cb.value.toLowerCase())
-  );
+  const query = document.getElementById("search-input").value.toLowerCase().trim();
+  const selSet = new Set(Array.from(document.querySelectorAll("#region-list input:checked")).map(cb => cb.value.toLowerCase()));
   const mode = document.querySelector("input[name=matchmode]:checked").value;
   let result = allPlayers;
   if (query)       result = result.filter(p => p.name.toLowerCase().includes(query));
   if (selSet.size) {
     result = result.filter(p => {
       const pr = new Set((p.regions||[]).map(r=>r.toLowerCase()));
-      return mode === "all"
-        ? [...selSet].every(r => pr.has(r))
-        : [...selSet].some(r  => pr.has(r));
+      return mode === "all" ? [...selSet].every(r => pr.has(r)) : [...selSet].some(r => pr.has(r));
     });
   }
   if (raidFilter !== "default") {
@@ -935,21 +912,18 @@ function sortPlayers(col) {
   allPlayers.sort((a, b) => {
     let va, vb;
     if (col === "regions") {
-      va = (a.regions||[]).length; vb = (b.regions||[]).length;
-    } else if (col === "name") {
-      va = a.name.toLowerCase(); vb = b.name.toLowerCase();
-    } else if (col === "trophy") {
-      // Sort by points (which determines trophy)
-      va = a.points || 0; vb = b.points || 0;
-    } else if (col === "progress") {
-      // Sort by % of regional max (weighted)
-      const maxA = calcRegionalMax(a.regions);
-      const maxB = calcRegionalMax(b.regions);
-      va = maxA > 0 ? (a.points || 0) / maxA : 0;
-      vb = maxB > 0 ? (b.points || 0) / maxB : 0;
-    } else {
-      va = a[col] || 0; vb = b[col] || 0;
+      va = (a.regions||[]).length;
+      vb = (b.regions||[]).length;
     }
+    else if (col === "name") {
+      va = a.name.toLowerCase();
+      vb = b.name.toLowerCase();
+    }
+    else if (col === "trophy") { va = a.points || 0; vb = b.points || 0; }
+    else if (col === "progress") {
+      va = (a.points||0) / calcRegionalMax(a.regions);
+      vb = (b.points||0) / calcRegionalMax(b.regions);
+    } else { va = a[col] || 0; vb = b[col] || 0; }
     if (va < vb) return sortRev ? 1 : -1;
     if (va > vb) return sortRev ? -1 : 1;
     return 0;
@@ -972,33 +946,40 @@ function sortPlayers(col) {
 // ─────────────────────────────────────────────────────────────────────────────
 function updateStats() {
   const total = allPlayers.length;
-  const known = allPlayers.filter(p=>p.regions&&p.regions.length>0).length;
-  document.getElementById("count-label").textContent  = `Showing ${filtered.length.toLocaleString()} / ${total.toLocaleString()}`;
+  const known = allPlayers.filter(p => p.regions && p.regions.length > 0).length;
+  document.getElementById("count-label").textContent = `Showing ${filtered.length.toLocaleString()} / ${total.toLocaleString()}`;
   document.getElementById("region-label").textContent = `│  Regions: ${known.toLocaleString()}/${total.toLocaleString()}`;
 }
 function setStatus(msg, color="dim") {
   const el = document.getElementById("status-text");
-  el.style.color = {gold:"#c8a84b",green:"#3a8a3a",red:"#c0392b",dim:"#888070"}[color]||"#888070";
+  el.style.color = {
+    gold: "#c8a84b",
+    green:"#3a8a3a",
+    red:  "#c0392b",
+    dim:  "#888070"
+  }[color] || "#888070";
   el.textContent = msg;
 }
 function setProgress(frac) {
   document.getElementById("progress-bar").style.width = `${Math.round(frac*100)}%`;
 }
 function setBtnsDisabled(dis) {
-  document.getElementById("btn-fetch-lb").disabled  = dis;
+  document.getElementById("btn-fetch-lb").disabled = dis;
   document.getElementById("btn-fetch-reg").disabled = dis;
-  document.getElementById("btn-fetch-lb").textContent  = dis ? "⏳ FETCHING…" : "⚔ FETCH LEADERBOARD";
+  document.getElementById("btn-fetch-lb").textContent = dis ? "⏳ FETCHING…" : "⚔ FETCH LEADERBOARD";
   document.getElementById("btn-fetch-reg").textContent = dis ? "⏳ FETCHING…" : "🗺 FETCH REGIONS";
 }
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
 function exportCSV() {
   const rows = ["Rank,Name,LeaguePoints,Trophy,WeightedPct,RegionalMax,Regions"];
   for (const p of filtered) {
-    const trophy  = getTrophy(p.points || 0);
-    const regMax  = calcRegionalMax(p.regions);
-    const pct     = p.points ? ((p.points / regMax) * 100).toFixed(1) : "0.0";
-    const rstr    = (p.regions||[]).join("|") || "Unknown";
+    const trophy = getTrophy(p.points || 0);
+    const regMax = calcRegionalMax(p.regions);
+    const pct = p.points ? ((p.points / regMax) * 100).toFixed(1) : "0.0";
+    const rstr = (p.regions||[]).join("|") || "Unknown";
     rows.push(`${p.rank},"${p.name}",${p.points},"${trophy.name}",${pct}%,${regMax},"${rstr}"`);
   }
   const a = document.createElement("a");
@@ -1023,22 +1004,17 @@ function buildRegionList() {
     cb.type = "checkbox"; cb.value = region;
     cb.addEventListener("change", () => {
       const allCbs = document.querySelectorAll("#region-list input");
-      const msg    = document.getElementById("region-limit-msg");
-      // Count how many are checked RIGHT NOW (after this change event fired)
+      const msg = document.getElementById("region-limit-msg");
       const checkedCount = Array.from(allCbs).filter(c => c.checked).length;
       if (checkedCount > 3) {
-        // Revert this checkbox — user tried to select a 4th
         cb.checked = false;
         msg.style.display = "block";
-        // Don't return — still call applyFilter so table reflects current 3 selections
         applyFilter();
         return;
       }
-      // Hide error once back to 3 or fewer
       msg.style.display = "none";
       applyFilter();
     });
-    // Append cb first, then add the text as a text node — avoids innerHTML clobbering the listener
     label.appendChild(cb);
     label.appendChild(document.createTextNode(region));
     list.appendChild(label);
@@ -1049,6 +1025,11 @@ function buildRegionList() {
 //  Init
 // ─────────────────────────────────────────────────────────────────────────────
 async function init() {
+  // Populate header from CONFIG
+  document.getElementById("league-title").textContent = CONFIG.leagueName.toUpperCase() + " LEAGUE";
+  document.getElementById("league-dates").innerHTML =
+    `Leagues ${CONFIG.leagueNumber} &nbsp;•&nbsp; ${CONFIG.leagueStart} – ${CONFIG.leagueEnd}`;
+
   buildRegionList();
   document.getElementById("search-input").addEventListener("input", () => {
     clearTimeout(debounceT);
@@ -1058,15 +1039,15 @@ async function init() {
     if (e.key === "Enter") lookupPlayer();
   });
   document.getElementById("search-btn").addEventListener("click", lookupPlayer);
-  document.getElementById("lookup-dismiss").addEventListener("click", () => setLookupBanner(null,""));
+  document.getElementById("lookup-dismiss").addEventListener("click", () => {
+    setLookupBanner(null, "");
+  });
   document.getElementById("clear-btn").addEventListener("click", () => {
     document.querySelectorAll("#region-list input").forEach(cb => cb.checked=false);
     document.getElementById("region-limit-msg").style.display = "none";
     document.getElementById("search-input").value = "";
     raidFilter = "default";
-    document.querySelectorAll(".raid-btn").forEach(b => {
-      b.classList.remove("active-default", "active-with", "active-without");
-    });
+    document.querySelectorAll(".raid-btn").forEach(b => b.classList.remove("active-default","active-with","active-without"));
     document.querySelector(".raid-btn[data-raid='default']").classList.add("active-default");
     applyFilter();
   });
@@ -1079,17 +1060,11 @@ async function init() {
   document.querySelectorAll("input[name=matchmode]").forEach(r =>
     r.addEventListener("click", applyFilter)
   );
-
   document.querySelectorAll(".raid-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       raidFilter = btn.dataset.raid;
-      document.querySelectorAll(".raid-btn").forEach(b => {
-        b.classList.remove("active-default", "active-with", "active-without");
-      });
-      btn.classList.add(
-        raidFilter === "default" ? "active-default" :
-        raidFilter === "with"    ? "active-with"    : "active-without"
-      );
+      document.querySelectorAll(".raid-btn").forEach(b => b.classList.remove("active-default","active-with","active-without"));
+      btn.classList.add(raidFilter === "default" ? "active-default" : raidFilter === "with" ? "active-with" : "active-without");
       applyFilter();
     });
   });
@@ -1099,16 +1074,12 @@ async function init() {
     const resp = await fetch("leaderboard_data.json");
     if (!resp.ok) throw new Error("no json");
     const data = await resp.json();
-    const pc   = loadLocalCache();
-    allPlayers = (data.players || []).map(p => ({
-      ...p,
-      regions: pc[p.name] || p.regions || [],
-    }));
+    const pc = loadLocalCache();
+    allPlayers = (data.players || []).map(p => ({ ...p, regions: pc[p.name] || p.regions || [] }));
     filtered = [...allPlayers];
     if (data.generated) {
       const d = new Date(data.generated);
-      document.getElementById("generated-time").innerHTML =
-        `Last auto-update<br>${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+      document.getElementById("generated-time").innerHTML = `Last auto-update<br>${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
     }
     renderTable();
     updateStats();
@@ -1117,7 +1088,7 @@ async function init() {
     setStatus("No snapshot — hit ⚔ FETCH LEADERBOARD to load data.", "dim");
   }
   document.getElementById("loading").style.display = "none";
-  document.getElementById("app").style.display     = "flex";
+  document.getElementById("app").style.display = "flex";
 }
 
 init();
