@@ -23,8 +23,11 @@ from datetime import datetime, timezone
 import requests
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Constants (mirrored from leagues_gui.py)
+#  Constants
 # ─────────────────────────────────────────────────────────────────────────────
+
+PROXY_URL = "https://osrs-proxy.bauwsloa.workers.dev"
+SECRET    = os.environ.get("PROXY_SECRET", "")
 
 BASE            = "https://secure.runescape.com"
 SEASONAL        = f"{BASE}/m=hiscore_oldschool_seasonal"
@@ -91,9 +94,9 @@ def save_cache(cache):
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(cache, f, indent=2, ensure_ascii=False)
 
-def http_get(session, url, params=None, headers=None):
+def http_get(session, url, headers=None):
     try:
-        r = session.get(url, params=params, headers=headers or HEADERS_JAGEX,
+        r = session.get(url, headers=headers or HEADERS_JAGEX,
                         timeout=12, allow_redirects=True)
         r.raise_for_status()
         return r
@@ -101,7 +104,8 @@ def http_get(session, url, params=None, headers=None):
         return None
 
 def fetch_leaderboard_page(page, session):
-    resp = http_get(session, LEADERBOARD_URL, {**LEADERBOARD_PRM, "page": page})
+    url  = f"{PROXY_URL}?leaderboard&page={page}&secret={SECRET}"
+    resp = http_get(session, url)
     return parse_leaderboard_html(resp.text) if resp else []
 
 def parse_areas(data):
@@ -112,7 +116,8 @@ def parse_areas(data):
     return regions
 
 def fetch_one_region(name, session):
-    resp = http_get(session, TEMPLE_API, {"player": name}, HEADERS_TEMPLE)
+    url  = f"{PROXY_URL}?regions&player={requests.utils.quote(name)}&secret={SECRET}"
+    resp = http_get(session, url, HEADERS_TEMPLE)
     if not resp:
         return name, None
     try:
